@@ -138,12 +138,14 @@ sub handle {
         # first get the fractional part
         my ($num, $frac) = split /\./, $self->{value};
         #$frac ||= 0;
-        if ((defined $frac && $frac>0 && $frac<10) || $val->value == 0 || (defined $frac && $frac =~ m!0$!)) {
+        if ((defined $frac && $frac>0 && $frac<10) || $val->value == 0 || (defined $self->{last_added} and $self->{last_added} eq '0')) {
             $frac .= $val->value;
         } else {
             $frac += $val->value;
         }
-        return $self->new("${num}.${frac}", 'point');
+        my $new = $self->new("${num}.${frac}", 'point');
+        $new->{last_added} = $val->value;
+		return $new;
     } 
 }
 

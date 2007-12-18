@@ -30,7 +30,7 @@ Acme::Numbers - a fluent numeric interface
 
     print fifty.pence."\n";               # prints "0.50"
     print fifty.five.pence."\n";          # prints "0.55"
-    print four.pounds.fifty.pence."\n";   # prints "4.55"
+    print four.pounds.fifty.pence."\n";   # prints "4.50"
     print four.pounds.and.fifty.p."\n";   # prints "4.50"
 
     print fifty.cents."\n";               # prints "0.50"

@@ -23,10 +23,20 @@ Acme::Numbers - a fluent numeric interface
     print one.point.zero.two."\n";        # prints 1.02
     print zero.point.zero.five."\n";      # prints 0.05
 
-	print four.pounds."\n";               # prints "4.00"
-	print four.pounds.five."\n";          # prints "4.05"
-	print four.pounds.fifty."\n";         # prints "4.50"
-	print four.pounds.fift.five."\n";     # prints "4.55"
+    print four.pounds."\n";               # prints "4.00"
+    print four.pounds.five."\n";          # prints "4.05"
+    print four.pounds.fifty."\n";         # prints "4.50"
+    print four.pounds.fifty.five."\n";    # prints "4.55"
+
+    print fifty.pence."\n";               # prints "0.50"
+    print fifty.five.pence."\n";          # prints "0.55"
+    print four.pounds.fifty.pence."\n";   # prints "4.55"
+
+    print fifty.cents."\n";               # prints "0.50"
+    print fifty.five.cents."\n";          # prints "0.55"
+    print four.dollars.fifty.cents."\n";  # prints "4.55"
+
+    
 
 =head1 DESCRIPTION
 
@@ -68,7 +78,9 @@ sub import {
     my ($pkg, $file) = caller; 
     $Lingua::EN::Words2Nums::billion = $opts{billion};
     foreach my $num ((keys %Lingua::EN::Words2Nums::nametosub, 
-                      'and', 'point', 'zero', 'pound', 'pounds')) {
+                      'and', 'point', 'zero', 
+                      'pound', 'pounds', 'pence', 'p',
+                      'dollars', 'cents')) {
         *{"$pkg\::$num"} = sub { $class->$num };
     }
 };
@@ -98,13 +110,19 @@ The current numeric value
 sub value { 
     my $self = shift;
     my $val = $self->{value} + 0;
+    if ($self->{operator} =~ m!^p(ence)?$!) {
+        $self->{last_added} = $val;
+        $val = $val/100;
+        $self->{operator} = 'pounds';
+    }
     if ($self->{operator} =~ m!^pounds?$!) {
-		my ($num, $frac) = split /\./, $val;
-		$frac ||= 0;
-		$frac = $self->{last_added} if defined $self->{last_added} && $self->{last_added}>$frac;
-		$val = sprintf("%d.%02d",$num,$frac);
-	}
-	return $val;
+        my ($num, $frac) = split /\./, $val;
+        $frac ||= 0;
+        $frac = $self->{last_added} if defined $self->{last_added} && $self->{last_added}>$frac;
+        $val  = sprintf("%d.%02d",$num,$frac);
+    } 
+
+    return $val;
 }
 
 sub AUTOLOAD {
@@ -112,7 +130,10 @@ sub AUTOLOAD {
     my $method = $AUTOLOAD;
     $method    =~ s/.*://;   # strip fully-qualified portion
     my $val;
-    if ($method eq 'and' || $method eq 'point' || $method =~ m!^pounds?$!) {
+    $method = 'pounds' if $method eq 'dollars';
+    $method = 'pence'  if $method eq 'cents';
+
+    if ($method eq 'and' || $method =~ m!^p!) {
         $val = $self->new(0, $method) 
     } else {
         my $tmp = ($method eq 'zero')? 0 : words2nums($method);
@@ -134,16 +155,16 @@ Handle putting these two objects together
 
 sub handle {
     my ($self, $val) = @_;
-    if ($self->{operator} !~ m!^po!) {
-        if ($val->{operator} =~ m!^po!) {
-            $self->{operator} = $val->{operator};
+    if ($self->{operator} !~ m!^p!) {
+        if ($val->{operator} =~ m!^p!) {
+            $self->{operator} = $val->{operator} unless $self->{operator} =~ m!^pounds?$!;
             return $self;
         } else {
-            my $val = $val->value;
+            my $val = $val->{value};
             if ($self->value < $val && $self->{operator} ne 'add') {
-                $val *= $self->value;
+                $val *= $self->{value};
             } else {
-                $val += $self->value;
+                $val += $self->{value};
             }
             return $self->new($val, 'num');
         }
@@ -152,13 +173,13 @@ sub handle {
         my ($num, $frac) = split /\./, $self->{value};
         #$frac ||= 0;
         if ((defined $frac && $frac>0 && $frac<10) || $val->value == 0 || (defined $self->{last_added} and $self->{last_added} eq '0')) {
-            $frac .= $val->value;
+            $frac .= $val->{value};
         } else {
-            $frac += $val->value;
+            $frac += $val->{value};
         }
         my $new = $self->new("${num}.${frac}", $self->{operator});
-        $new->{last_added} = $val->value;
-		return $new;
+        $new->{last_added} = $val->{value};
+        return $new;
     } 
 }
 

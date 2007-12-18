@@ -2,6 +2,7 @@ package Acme::Numbers;
 use strict;
 use Lingua::EN::Words2Nums qw(words2nums);
 our $AUTOLOAD;
+our $VERSION = '0.5';
 
 # TODO
 # Allow 'point' as in
@@ -11,11 +12,12 @@ our $AUTOLOAD;
 # fields and then having extra smarts in handle()
 
 sub import {
+	my $class = shift;
     no strict 'refs';
     no warnings 'redefine';
     my ($pkg, $file) = caller; 
     foreach my $num ((keys %Lingua::EN::Words2Nums::nametosub, 'and')) {
-        *{"$pkg\::$num"} = sub { Numbers->$num };
+        *{"$pkg\::$num"} = sub { $class->$num };
     }
 };
 
@@ -54,13 +56,14 @@ sub handle {
             $val += $self->value;
         }
     }
-    return Numbers->new($val);
+    return __PACKAGE__->new($val);
 
 }
 
 sub recall {
     my ($self, $new) = @_;
-    if (ref($new) && $new->isa('Numbers')) {
+	my $class = ref($self);
+    if (ref($new) && $new->isa($class)) {
         return $self->handle($new->value);
     } else {
         return $self->value.$new;

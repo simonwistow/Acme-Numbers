@@ -34,12 +34,20 @@ was curiosity.
 
 =head1 ONE BIIIIIIIIIIIILLION
 
+By default billion is 10**12 because, dammit, that's right.
+
+If you want it to be an American billion then do
+
+    use Acme::Numbers billion => 10**9;
+
+Setting this automatically changes all the larger numbers 
+(trillion, quadrillion, etc) to match.
 
 =head1 METHODS
 
 You should never really use these methods on the class directly.
 
-All numbers handled by C<Lingua::EN::Nums2Words> are handled by this module.
+All numbers handled by C<Lingua::EN::Words2Nums> are handled by this module.
 
 In addition ...
 
@@ -47,9 +55,13 @@ In addition ...
 
 sub import {
     my $class = shift;
+    my %opts  = @_;
+
+    $opts{billion} = 10**12 unless defined $opts{billion};
     no strict 'refs';
     no warnings 'redefine';
     my ($pkg, $file) = caller; 
+    $Lingua::EN::Words2Nums::billion = $opts{billion};
     foreach my $num ((keys %Lingua::EN::Words2Nums::nametosub, 'and', 'point', 'zero')) {
         *{"$pkg\::$num"} = sub { $class->$num };
     }

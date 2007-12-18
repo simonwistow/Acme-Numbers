@@ -110,8 +110,9 @@ The current numeric value
 
 sub value { 
     my $self = shift;
-    my $val = $self->{value} + 0;
+    my $val = $self->{value};
     if ($self->{operator} =~ m!^p(ence)?$!) {
+        print "Got $val\n";
         $self->{last_added} = $val;
         $val = $val/100;
         $self->{operator} = 'pounds';
@@ -120,7 +121,7 @@ sub value {
         my ($num, $frac) = split /\./, $val;
         $frac ||= 0;
         $frac = $self->{last_added} if defined $self->{last_added} && $self->{last_added}>$frac;
-        $val  = sprintf("%d.%02d",$num,$frac);
+        $val  = sprintf("%d.%02d",$num,substr($frac,0,2));
     } 
 
     return $val;
@@ -162,7 +163,7 @@ sub handle {
             return $self;
         } else {
             my $val = $val->{value};
-            if ($self->value < $val && $self->{operator} ne 'add') {
+            if ($self->{value} < $val && $self->{operator} ne 'add') {
                 $val *= $self->{value};
             } else {
                 $val += $self->{value};
@@ -173,7 +174,7 @@ sub handle {
         # first get the fractional part
         my ($num, $frac) = split /\./, $self->{value};
         #$frac ||= 0;
-        if ((defined $frac && $frac>0 && $frac<10) || $val->value == 0 || (defined $self->{last_added} and $self->{last_added} eq '0')) {
+        if ((defined $frac && $frac>0 && $frac<10) || $val->{value} == 0 || (defined $self->{last_added} and $self->{last_added} eq '0')) {
             $frac .= $val->{value};
         } else {
             $frac += $val->{value};

@@ -15,13 +15,18 @@ Acme::Numbers - a fluent numeric interface
 
     print one."\n";                       # prints 1
     print two.hundred."\n";               # prints 200
-    print forty.two."\n";                 # print 42
+    print forty.two."\n";                 # prints 42
     print six.hundred.and.sixty.six."\n"; # prints 666
-    print one.million."\n";               # print 1000000
+    print one.million."\n";               # prints 1000000
 
-    print three.point.one.four."\n";      # print 3.14
-    print one.point.zero.two."\n";        # print 1.02
-    print zero.point.zero.five."\n";      # print 0.05
+    print three.point.one.four."\n";      # prints 3.14
+    print one.point.zero.two."\n";        # prints 1.02
+    print zero.point.zero.five."\n";      # prints 0.05
+
+	print four.pounds."\n";               # prints "4.00"
+	print four.pounds.five."\n";          # prints "4.05"
+	print four.pounds.fifty."\n";         # prints "4.50"
+	print four.pounds.fift.five."\n";     # prints "4.55"
 
 =head1 DESCRIPTION
 
@@ -62,7 +67,8 @@ sub import {
     no warnings 'redefine';
     my ($pkg, $file) = caller; 
     $Lingua::EN::Words2Nums::billion = $opts{billion};
-    foreach my $num ((keys %Lingua::EN::Words2Nums::nametosub, 'and', 'point', 'zero')) {
+    foreach my $num ((keys %Lingua::EN::Words2Nums::nametosub, 
+                      'and', 'point', 'zero', 'pound', 'pounds')) {
         *{"$pkg\::$num"} = sub { $class->$num };
     }
 };
@@ -91,7 +97,14 @@ The current numeric value
 
 sub value { 
     my $self = shift;
-    return $self->{value} + 0;
+    my $val = $self->{value} + 0;
+    if ($self->{operator} =~ m!^pounds?$!) {
+		my ($num, $frac) = split /\./, $val;
+		$frac ||= 0;
+		$frac = $self->{last_added} if defined $self->{last_added} && $self->{last_added}>$frac;
+		$val = sprintf("%d.%02d",$num,$frac);
+	}
+	return $val;
 }
 
 sub AUTOLOAD {
@@ -99,7 +112,7 @@ sub AUTOLOAD {
     my $method = $AUTOLOAD;
     $method    =~ s/.*://;   # strip fully-qualified portion
     my $val;
-    if ($method eq 'and' || $method eq 'point') {
+    if ($method eq 'and' || $method eq 'point' || $method =~ m!^pounds?$!) {
         $val = $self->new(0, $method) 
     } else {
         my $tmp = ($method eq 'zero')? 0 : words2nums($method);
@@ -121,9 +134,9 @@ Handle putting these two objects together
 
 sub handle {
     my ($self, $val) = @_;
-    if ($self->{operator} ne 'point') {
-        if ($val->{operator} eq 'point') {
-            $self->{operator} = 'point';
+    if ($self->{operator} !~ m!^po!) {
+        if ($val->{operator} =~ m!^po!) {
+            $self->{operator} = $val->{operator};
             return $self;
         } else {
             my $val = $val->value;
@@ -131,7 +144,7 @@ sub handle {
                 $val *= $self->value;
             } else {
                 $val += $self->value;
-               }
+            }
             return $self->new($val, 'num');
         }
     } else { # point
@@ -143,7 +156,7 @@ sub handle {
         } else {
             $frac += $val->value;
         }
-        my $new = $self->new("${num}.${frac}", 'point');
+        my $new = $self->new("${num}.${frac}", $self->{operator});
         $new->{last_added} = $val->value;
 		return $new;
     } 

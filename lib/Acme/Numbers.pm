@@ -111,15 +111,21 @@ The current numeric value
 sub value { 
     my $self = shift;
     my $val = $self->{value};
+    # if we're 'pence' then divide by 100 and then pretend we're pounds
     if ($self->{operator} =~ m!^p(ence)?$!) {
-        $self->{last_added} = $val;
+        # this fixes something where there's 0 
+        # pounds and a trailing zero like 0.50
+        $self->{last_added} = $val; 
         $val = $val/100;
         $self->{operator} = 'pounds';
     }
     if ($self->{operator} =~ m!^pounds?$!) {
         my ($num, $frac) = split /\./, $val;
         $frac ||= 0;
+        # this also fixes 0 pounds trailing zero
         $frac = $self->{last_added} if defined $self->{last_added} && $self->{last_added}>$frac;
+        # we substr to fix one.pound.fifty.pence which 
+        # leaves $frac as '500' 
         $val  = sprintf("%d.%02d",$num,substr($frac,0,2));
     } 
 
@@ -131,20 +137,34 @@ sub AUTOLOAD {
     my $method = $AUTOLOAD;
     $method    =~ s/.*://;   # strip fully-qualified portion
     my $val;
+    # nasty override - we should probably have a 
+    # generic major or minor currency indicator
+    # if we could store and propogate the currency
+    # then we could also throw errors at mismatched 
+    # units e.g five.pounds.and.fifty.cents
+    # but maybe also print out the correct sigil
+    # e.g $5.50
     $method = 'pounds' if $method eq 'dollars';
     $method = 'pence'  if $method eq 'cents';
 
+    # dummy methods
     if ($method eq 'and' || $method =~ m!^p!) {
         $val = $self->new(0, $method) 
     } else {
+        # bit of a hack here
         my $tmp = ($method eq 'zero')? 0 : words2nums($method);
+        # maybe this should die 
         return unless defined $tmp;
         $val = $self->new($tmp, 'num');
     }
-    if (ref $self) {
-        return $self->handle($val);
-    } else {
+
+    # If we're the first number in the chain 
+    # then just return ourselves
+    if (!ref $self) {
         return $val;
+    } else {
+        # Otherwise do the magic 
+        return $self->handle($val);
     }
 }
 
@@ -156,29 +176,41 @@ Handle putting these two objects together
 
 sub handle {
     my ($self, $val) = @_;
+    # If we haven't passed a pounds, pence or point marker
     if ($self->{operator} !~ m!^p!) {
+        # If the new object is marker ...
         if ($val->{operator} =~ m!^p!) {
+            # ... Just propogate along but make a note
+            # A pound should not be overidden by a pence
             $self->{operator} = $val->{operator} unless $self->{operator} =~ m!^pounds?$!;
             return $self;
+
+        # Otherwise ...
         } else {
             my $val = $val->{value};
+            # If we're not currently adding and the new more than the old
+            # e.g two.hundred then multiply
             if ($self->{value} < $val && $self->{operator} ne 'add') {
                 $val *= $self->{value};
+            # Otherwise add
             } else {
                 $val += $self->{value};
             }
             return $self->new($val, 'num');
         }
-    } else { # point
+    } else { # point, pound, pence
         # first get the fractional part
         my ($num, $frac) = split /\./, $self->{value};
         #$frac ||= 0;
+        # Cope with four.point.zero.four
         if ((defined $frac && $frac>0 && $frac<10) || $val->{value} == 0 || (defined $self->{last_added} and $self->{last_added} eq '0')) {
             $frac .= $val->{value};
         } else {
             $frac += $val->{value};
         }
+        # Create the new object
         my $new = $self->new("${num}.${frac}", $self->{operator});
+        # We use this to be able to do point.fifty.five and point.five.five
         $new->{last_added} = $val->{value};
         return $new;
     } 
@@ -193,8 +225,10 @@ Concatenate two things.
 sub concat {
     my ($self, $new) = @_;
     my $class = shift;
+    # If both objects are special numbers handle them
     if (ref($new) && $new->isa(__PACKAGE__)) {
         return $self->handle($new);
+    # Otherwise stringify both and concat
     } else {
         return $self->value.$new;
     } 

@@ -112,7 +112,6 @@ sub value {
     my $self = shift;
     my $val = $self->{value};
     if ($self->{operator} =~ m!^p(ence)?$!) {
-        print "Got $val\n";
         $self->{last_added} = $val;
         $val = $val/100;
         $self->{operator} = 'pounds';

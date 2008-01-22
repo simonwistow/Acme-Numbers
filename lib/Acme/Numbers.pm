@@ -83,12 +83,7 @@ sub import {
                       'pound', 'pounds', 'pence', 'p',
                       'dollars', 'cents')) 
     {
-        my $uboat = sub {
-            unless (@_) { return $class->$num; }
-            return $class->$num->concat($_[0]);
-        };
-        # set_prototype($uboat, ';$');
-        *{"$pkg\::$num"} = $uboat;
+        *{"$pkg\::$num"} = sub { $class->$num };
     }
 };
 

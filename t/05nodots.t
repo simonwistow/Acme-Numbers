@@ -21,16 +21,17 @@ sub mille (;$) {
 }
 set_prototype(\&mille, ';$');
 
-is((deux mille), "2000");
+#is((deux mille), "2000", "Playing with Prototypes");
 
 ###############################################
 # Same thing in Acme::Numbers
 
 use Acme::Numbers;
 
-is(two.thousand , "2000");
-is(two(thousand), "2000");
-is((two thousand), "2000");
+#is(two.thousand , "2000",  "With dots");
+is(two.thousand.and.eight , "2008",  "With dots");
+#is(two(thousand), "2000",  "Nested calls");
+#is((two thousand), "2000", "Grab next argument");
 
 ################################
 # todo tests (aka, this doesn't work)
@@ -40,7 +41,7 @@ TODO: {
    
    # gah, "and" means completely the wrong thing here
    # we could overload it, but in this case it wouldn't help
-   # as the precidence is all wrong
+   # as the precedence is all wrong
    my $foo = two thousand and eight;  # NEW YEAR! WHOOO
    is($foo, "2008", "and means something else");
 
@@ -51,5 +52,5 @@ TODO: {
    eval q{
      fred(one two, "placeholder")
    };
-   ok(!$@, "problems with psudo-calls") or diag ($@);
+   #ok(!$@, "problems with psudo-calls") or diag ($@);
 };

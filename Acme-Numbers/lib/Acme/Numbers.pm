@@ -81,14 +81,8 @@ sub import {
     foreach my $num ((keys %Lingua::EN::Words2Nums::nametosub, 
                       'and', 'point', 'zero', 
                       'pound', 'pounds', 'pence', 'p',
-                      'dollars', 'cents')) 
-    {
-        my $uboat = sub {
-            unless (@_) { return $class->$num; }
-            return $class->$num->concat($_[0]);
-        };
-        # set_prototype($uboat, ';$');
-        *{"$pkg\::$num"} = $uboat;
+                      'dollars', 'cents')) {
+        *{"$pkg\::$num"} = sub { $class->$num };
     }
 };
 
@@ -105,18 +99,7 @@ sub new {
     $class = ref $class if ref $class;
     my $val   = shift;
     my $op    = shift;
-    my $name  = shift || $op;
-    bless { value => $val, operator => $op, name => $name }, $class;
-}
-
-=head2 name 
-
-The name of this object (i.e the method that was originally called).
-
-=cut
-
-sub name {
-	return $_[0]->{name};
+    bless { value => $val, operator => $op }, $class;
 }
 
 =head2 value
@@ -153,7 +136,6 @@ sub AUTOLOAD {
     my $self   = shift;
     my $method = $AUTOLOAD;
     $method    =~ s/.*://;   # strip fully-qualified portion
-    print "METHOD=$method\n";
     my $val;
     # nasty override - we should probably have a 
     # generic major or minor currency indicator
@@ -173,7 +155,7 @@ sub AUTOLOAD {
         my $tmp = ($method eq 'zero')? 0 : words2nums($method);
         # maybe this should die 
         return unless defined $tmp;
-        $val = $self->new($tmp, 'num', $method);
+        $val = $self->new($tmp, 'num');
     }
 
     # If we're the first number in the chain 
@@ -212,10 +194,9 @@ sub handle {
                 $val *= $self->{value};
             # Otherwise add
             } else {
-                print "Adding $val and $self->{value}\n";
                 $val += $self->{value};
             }
-            return $self->new($val, 'num', $self->{operator});
+            return $self->new($val, 'num');
         }
     } else { # point, pound, pence
         # first get the fractional part
@@ -253,15 +234,8 @@ sub concat {
     } 
 }
 
-sub bool {
-    my ($self, $new, $op) = @_;
-    print "OP=$op\n";
-}
-
-use overload '""'       => 'value',
-             '+0'       => 'value',
-             '.'        => 'concat';
-#             'bool'     => 'bool';
+use overload '""' => 'value',
+             '.'  => 'concat';
 
 
 sub DESTROY {}

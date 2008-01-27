@@ -2,7 +2,7 @@ package Acme::Numbers;
 use strict;
 use Lingua::EN::Words2Nums qw(words2nums);
 our $AUTOLOAD;
-our $VERSION = '1.0';
+our $VERSION = '1.1';
 
 
 =head1 NAME
@@ -148,7 +148,6 @@ sub AUTOLOAD {
     my $self   = shift;
     my $method = $AUTOLOAD;
     $method    =~ s/.*://;   # strip fully-qualified portion
-    print "METHOD=$method\n";
     my $val;
     # nasty override - we should probably have a 
     # generic major or minor currency indicator
@@ -207,7 +206,6 @@ sub handle {
                 $val *= $self->{value};
             # Otherwise add
             } else {
-                print "Adding $val and $self->{value}\n";
                 $val += $self->{value};
             }
             return $self->new($val, 'num', $self->{operator});
@@ -248,9 +246,8 @@ sub concat {
     } 
 }
 
-sub bool {
+sub _bool {
     my ($self, $new, $op) = @_;
-    print "OP=$op\n";
 }
 
 use overload '""'       => 'value',

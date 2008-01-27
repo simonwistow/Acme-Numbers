@@ -8,3 +8,5 @@ t/03american_billion.t
 t/04currency.t
 t/pod-coverage.t
 t/pod.t
+Makefile.PL
+META.yml

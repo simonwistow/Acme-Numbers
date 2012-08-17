@@ -11,7 +11,8 @@ my $build = Module::Build->new(
                             'Lingua::EN::Words2Nums'  => 0, 
                             'Test::More'              => '0.62',
                         },
-         create_makefile_pl => 'passthrough',
+         configure_requires => { 'Module::Build' => 0.38 },
+         create_makefile_pl => 'small',
        );
 
 $build->create_build_script;

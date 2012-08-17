@@ -4,6 +4,8 @@
 ,v$
 \B\.svn\b
 \B\.cvsignore$
+\B\.git\b
+^\.gitignore$
 
 # Avoid Makemaker generated and utility files.
 \bMakefile$
@@ -37,3 +39,5 @@
 \B\._
 # Avoid archives of this distribution
 \bAcme-Numbers-[\d\.\_]+
+^MYMETA\.yml$
+^MYMETA\.json$

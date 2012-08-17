@@ -2,7 +2,7 @@ package Acme::Numbers;
 use strict;
 use Lingua::EN::Words2Nums qw(words2nums);
 our $AUTOLOAD;
-our $VERSION = '1.1';
+our $VERSION = '1.2';
 
 
 =head1 NAME
